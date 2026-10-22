@@ -1,135 +1,53 @@
-document.head.innerHTML += `
-<style>
-    body {
-        background-color: white;  /* fix Hass black theme */
-        display: flex;
-        flex-direction: column;
-        font-family: Arial, sans-serif;
-        margin: 0;
-    }
+(function () {
+    const pages = [
+        {name: '流列表', href: 'index.html', match: ['', 'index.html']},
+        {name: '添加', href: 'add.html', match: ['add.html']},
+        {name: '配置', href: 'config.html', match: ['config.html']},
+        {name: '日志', href: 'log.html', match: ['log.html']},
+        {name: '网络', href: 'net.html', match: ['net.html']},
+    ];
 
-    /* navigation block */
-    nav {
-        background-color: #333;
-        overflow: hidden;
-    }
+    const current = location.pathname.split('/').pop() || 'index.html';
 
-    nav a {
-        float: left;
-        display: block;
-        color: #f2f2f2;
-        text-align: center;
-        padding: 14px 16px;
-        text-decoration: none;
-        font-size: 17px;
-    }
+    const links = pages.map(page => {
+        const active = page.match.includes(current) ? ' class="active"' : '';
+        return `<a href="${page.href}"${active}>${page.name}</a>`;
+    }).join('');
 
-    nav a:hover {
-        background-color: #ddd;
-        color: black;
-    }
+    const header = `
+        <header class="site-header">
+            <div class="site-header-inner">
+                <a class="brand" href="index.html" aria-label="go2rtc 首页">
+                    <span class="brand-mark">g2</span>
+                    <span>go2rtc</span>
+                </a>
+                <nav class="nav-links" aria-label="主导航">${links}</nav>
+                <span class="nav-status"><span class="status-dot online"></span>本地服务</span>
+            </div>
+        </header>
+    `;
 
-    /* main block */
-    main {
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
+    document.body.insertAdjacentHTML('afterbegin', header);
 
-    /* checkbox */
-    label {
-        display: flex;
-        gap: 5px;
-        align-items: center;
-        cursor: pointer;
-    }
+    let toastStack;
 
-    input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
-    }
-
-    /* form */
-    form {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    input[type="text"], input[type="email"], input[type="password"], select {
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 16px;
-    }
-
-    button {
-        padding: 10px 20px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-    }
-
-    /* table */
-    table {
-        width: 100%;
-        background-color: white;
-        border-collapse: collapse;
-        margin: 0 auto;
-        overflow: hidden;
-    }
-
-    th, td {
-        padding: 12px 15px;
-        text-align: left;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    th {
-        background-color: #444;
-        color: white;
-    }
-
-    tr:nth-child(even) {
-        background-color: #fafafa;
-    }
-
-    tr:hover {
-        background-color: #edf7ff;
-        transition: background-color 0.3s ease;
-    }
-
-    /* table on mobile */
-    @media (max-width: 480px) {
-        table, thead, tbody, th, td, tr {
-            display: block;
+    window.toast = function (message, type) {
+        if (!toastStack) {
+            toastStack = document.createElement('div');
+            toastStack.className = 'toast-stack';
+            document.body.appendChild(toastStack);
         }
 
-        th, td {
-            box-sizing: border-box;
-            width: 100% !important;
-            border: none;
-        }
+        const item = document.createElement('div');
+        item.className = 'toast' + (type ? ' ' + type : '');
+        item.textContent = message;
+        toastStack.appendChild(item);
 
-        tr {
-            margin-bottom: 10px;
-            border-radius: 4px;
-        }
-    }
-</style>
-`;
-
-document.body.innerHTML = `
-<header>
-    <nav>
-        <a href="index.html"><b>go2rtc</b></a>
-        <a href="add.html">add</a>
-        <a href="config.html">config</a>
-        <a href="log.html">log</a>
-        <a href="net.html">net</a>
-    </nav>
-</header>
-` + document.body.innerHTML;
+        setTimeout(() => {
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(6px)';
+            item.style.transition = 'opacity .18s ease, transform .18s ease';
+            setTimeout(() => item.remove(), 200);
+        }, 3200);
+    };
+})();

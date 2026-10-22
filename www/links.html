@@ -1,268 +1,480 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>links - go2rtc</title>
-    <style>
-        div > li {
-            list-style-type: none;
-            padding-left: 10px;
-            position: relative;
-        }
-
-        div > li:before {
-            content: "-";
-            position: absolute;
-            left: 0;
-        }
-    </style>
+    <title>流链接 - go2rtc</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <script src="main.js"></script>
 
-<main>
-    <div id="links"></div>
-    <script>
-        const src = new URLSearchParams(location.search).get('src').replace(/[<">]/g, ''); // sanitize
+<main class="page">
+    <section class="page-header">
+        <div class="page-header-copy">
+            <span class="eyebrow">流链接</span>
+            <h1 id="stream-title">流</h1>
+            <p class="page-subtitle">在浏览器、播放器、录像软件或智能家居平台中打开此流。</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-secondary" href="index.html">返回流列表</a>
+            <a class="btn btn-primary" id="quick-play" href="#">播放流</a>
+        </div>
+    </section>
 
-        const links = document.getElementById('links');
+    <div class="link-sections">
+        <section class="card link-section">
+            <div class="section-head">
+                <div>
+                    <h2>快速访问</h2>
+                    <p>通用播放器和运行时信息。</p>
+                </div>
+            </div>
+            <div class="link-section-body" id="links-quick"></div>
+        </section>
 
-        links.innerHTML = `
-        <h2>Any codec in source</h2>
-        <li><a href="stream.html?src=${src}">stream.html</a> with auto-select mode / browsers: all / codecs: H264, H265*, MJPEG, JPEG, AAC, PCMU, PCMA, OPUS</li>
-        <li><a href="api/streams?src=${src}">info.json</a> page with active connections</li>
-    `;
+        <section class="card link-section">
+            <div class="section-head">
+                <div>
+                    <h2>RTSP</h2>
+                    <p>兼容 Home Assistant、Frigate、VLC 和大多数 NVR 软件。</p>
+                </div>
+            </div>
+            <div class="link-section-body" id="links-rtsp"></div>
+        </section>
 
-        const url = new URL('api', location.href);
-        fetch(url, {cache: 'no-cache'}).then(r => r.json()).then(data => {
-            let rtsp = location.host + ':8554';
-            try {
-                const host = data.host.match(/^[^:]+/)[0];
-                const port = data.rtsp.listen.match(/[0-9]+$/)[0];
-                rtsp = `${host}:${port}`;
-            } catch (e) {
-            }
+        <section class="card link-section">
+            <div class="section-head">
+                <div>
+                    <h2>H264 / H265</h2>
+                    <p>低延迟播放和录像格式。</p>
+                </div>
+            </div>
+            <div class="link-section-body" id="links-h264"></div>
+        </section>
 
-            links.innerHTML += `
-            <li><a href="rtsp://${rtsp}/${src}">rtsp</a> with only one video and one audio / codecs: any</li>
-            <li><a href="rtsp://${rtsp}/${src}?mp4">rtsp</a> for MP4 recording (Hass or Frigate) / codecs: H264, H265, AAC</li>
-            <li><a href="rtsp://${rtsp}/${src}?video=all&audio=all">rtsp</a> with all tracks / codecs: any</li>
+        <section class="card link-section">
+            <div class="section-head">
+                <div>
+                    <h2>MJPEG</h2>
+                    <p>兼容所有浏览器和简单 HTTP 客户端。</p>
+                </div>
+            </div>
+            <div class="link-section-body" id="links-mjpeg"></div>
+        </section>
 
-            <pre>ffplay -fflags nobuffer -flags low_delay -rtsp_transport tcp "rtsp://${rtsp}/${src}"</pre>
-
-            <h2>H264/H265 source</h2>
-            <li><a href="stream.html?src=${src}&mode=webrtc">stream.html</a> WebRTC stream / browsers: all / codecs: H264, PCMU, PCMA, OPUS / +H265 in Safari</li>
-            <li><a href="stream.html?src=${src}&mode=mse">stream.html</a> MSE stream / browsers: Chrome, Firefox, Safari Mac/iPad / codecs: H264, H265*, AAC, PCMA*, PCMU*, PCM* / +OPUS in Chrome and Firefox</li>
-            <li><a href="api/stream.mp4?src=${src}">stream.mp4</a> legacy MP4 stream with AAC audio / browsers: Chrome, Firefox / codecs: H264, H265*, AAC</li>
-            <li><a href="api/stream.mp4?src=${src}&mp4=flac">stream.mp4</a> modern MP4 stream with common audio / browsers: Chrome, Firefox / codecs: H264, H265*, AAC, FLAC (PCMA, PCMU, PCM)</li>
-            <li><a href="api/stream.mp4?src=${src}&mp4=all">stream.mp4</a> MP4 stream with any audio / browsers: Chrome / codecs: H264, H265*, AAC, OPUS, MP3, FLAC (PCMA, PCMU, PCM)</li>
-            <li><a href="api/frame.mp4?src=${src}">frame.mp4</a> snapshot in MP4-format / browsers: all / codecs: H264, H265*</li>
-            <li><a href="api/stream.m3u8?src=${src}">stream.m3u8</a> legacy HLS/TS / browsers: Safari all, Chrome Android / codecs: H264</li>
-            <li><a href="api/stream.m3u8?src=${src}&mp4">stream.m3u8</a> legacy HLS/fMP4 / browsers: Safari all, Chrome Android / codecs: H264, H265*, AAC</li>
-            <li><a href="api/stream.m3u8?src=${src}&mp4=flac">stream.m3u8</a> modern HLS/fMP4 / browsers: Safari all, Chrome Android / codecs: H264, H265*, AAC, FLAC (PCMA, PCMU, PCM)</li>
-
-            <h2>MJPEG source</h2>
-            <li><a href="stream.html?src=${src}&mode=mjpeg">stream.html</a> with MJPEG mode / browsers: all / codecs: MJPEG, JPEG</li>
-            <li><a href="api/stream.mjpeg?src=${src}">stream.mjpeg</a> MJPEG stream / browsers: all / codecs: MJPEG, JPEG</li>
-            <li><a href="api/frame.jpeg?src=${src}">frame.jpeg</a> snapshot in JPEG-format / browsers: all / codecs: MJPEG, JPEG</li>
-        `;
-        });
-    </script>
-
-    <div id="homekit" style="display: none">
-        <h2>HomeKit server</h2>
+        <section class="card link-section" id="homekit" hidden>
+            <div class="section-head">
+                <div>
+                    <h2>Apple HomeKit</h2>
+                    <p>将此流配对到“家庭”App。</p>
+                </div>
+            </div>
+            <div class="link-section-body" id="links-homekit"></div>
+        </section>
     </div>
-    <script>
-        fetch(`api/homekit?id=${src}`, {cache: 'no-cache'}).then(async (r) => {
-            if (!r.ok) return;
 
-            const div = document.querySelector('#homekit');
-            div.innerHTML += `<div><a href="${r.url}">info.json</a> page with active connections</div>`;
-            div.style = '';
+    <div class="control-grid">
+        <section class="card control-card">
+            <div>
+                <h2>在摄像头上播放音频</h2>
+                <p>向支持双向音频的摄像头发送文件、直播流或文字转语音音频。</p>
+            </div>
+            <div class="radio-list">
+                <label class="checkbox"><input type="radio" name="play" value="file" checked><span>文件<small>远程 URL 或本地路径，例如 /media/song.mp3</small></span></label>
+                <label class="checkbox"><input type="radio" name="play" value="live"><span>直播流<small>电台或任意实时音频 URL</small></span></label>
+                <label class="checkbox"><input type="radio" name="play" value="text"><span>文字转语音<small>需要服务器上的 FFmpeg 支持</small></span></label>
+            </div>
+            <div class="form-row">
+                <label class="field"><span>路径、URL 或文本</span><input class="input" id="play-url" type="text" placeholder="路径 / URL / 文本"></label>
+                <button class="btn btn-primary" id="play-send" type="button">发送音频</button>
+            </div>
+        </section>
 
-            /** @type {{name: string, category_id: string, setup_code: string, setup_id: string, setup_uri: string}} */
-            const data = await r.json();
-            if (data.setup_code === undefined) return;
-
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
-            script.async = true;
-            script.onload = () => {
-                /* global BigInt */
-                const categoryID = BigInt(data.category_id);
-                const pin = BigInt(data.setup_code.replaceAll('-', ''));
-                const payload = categoryID << BigInt(31) | BigInt(2 << 27) | pin;
-                const setupURI = `X-HM://${payload.toString(36).toUpperCase().padStart(9, '0')}${data.setup_id}`;
-
-                div.innerHTML += `<pre>Setup Name: ${data.name}
-Setup Code: ${data.setup_code}</pre>
-<div id="homekit-qrcode"></div>`;
-
-                /* global QRCode */
-                new QRCode('homekit-qrcode', {text: setupURI, width: 128, height: 128});
-            };
-            document.head.appendChild(script);
-        });
-    </script>
-
-    <div>
-        <h2>Play audio</h2>
-        <label><input type="radio" name="play" value="file" checked>
-            file - play remote (https://example.com/song.mp3) or local (/media/song.mp3) file
-        </label>
-        <label><input type="radio" name="play" value="live">
-            live - play remote live stream (radio, etc.)
-        </label>
-        <label><input type="radio" name="play" value="text">
-            text - play Text To Speech (if your FFmpeg support this)
-        </label>
-        <br>
-        <input id="play-url" type="text" placeholder="path / url / text">
-        <button id="play-send">send</button>
-        / cameras with two way audio support
-    </div>
-    <script>
-        document.getElementById('play-send').addEventListener('click', ev => {
-            ev.preventDefault();
-            // action - file / live / text
-            const action = document.querySelector('input[name="play"]:checked').value;
-            const url = new URL('api/ffmpeg', location.href);
-            url.searchParams.set('dst', src);
-            url.searchParams.set(action, document.getElementById('play-url').value);
-            fetch(url, {method: 'POST'});
-        });
-    </script>
-
-    <div>
-        <h2>Publish stream</h2>
-        <pre>YouTube:  rtmps://xxx.rtmp.youtube.com/live2/xxxx-xxxx-xxxx-xxxx-xxxx
+        <section class="card control-card">
+            <div>
+                <h2>推流</h2>
+                <p>将此流推送到 YouTube、Telegram 或其他 RTMP 服务。</p>
+            </div>
+            <label class="field"><span>目标地址</span><input class="input" id="pub-url" type="text" placeholder="rtmps://…"></label>
+            <div class="action-line">
+                <button class="btn btn-primary" id="pub-send" type="button">开始推流</button>
+                <span class="badge">H264 + AAC</span>
+            </div>
+            <pre class="code-block">YouTube:  rtmps://xxx.rtmp.youtube.com/live2/xxxx-xxxx-xxxx-xxxx-xxxx
 Telegram: rtmps://xxx-x.rtmp.t.me/s/xxxxxxxxxx:xxxxxxxxxxxxxxxxxxxxxx</pre>
-        <input id="pub-url" type="text" placeholder="url">
-        <button id="pub-send">send</button>
-        / Telegram RTMPS server
+        </section>
+
+        <section class="card control-card" id="webrtc">
+            <div>
+                <h2>WebRTC 控制</h2>
+                <p>选择浏览器发送和接收的内容，然后打开本地播放器或创建分享链接。</p>
+            </div>
+            <div class="radio-list">
+                <label class="checkbox"><input type="radio" name="webrtc" value="video+audio" checked><span>视频 + 音频<small>简单查看</small></span></label>
+                <label class="checkbox"><input type="radio" name="webrtc" value="video+audio+microphone"><span>视频 + 音频 + 麦克风<small>摄像头的双向音频</small></span></label>
+                <label class="checkbox"><input type="radio" name="webrtc" value="camera+microphone"><span>摄像头 + 麦克风<small>从此浏览器推流</small></span></label>
+                <label class="checkbox"><input type="radio" name="webrtc" value="display+speaker"><span>屏幕 + 扬声器<small>直播软件</small></span></label>
+            </div>
+            <div class="action-line">
+                <a class="btn btn-secondary" id="local" href="webrtc.html?src=">打开本地播放器</a>
+                <a class="btn btn-secondary" id="shareadd" href="#">创建分享链接</a>
+                <a class="btn btn-secondary" id="shareget" href="#" hidden>复制分享链接</a>
+                <button class="btn btn-ghost" id="sharedel" type="button" hidden>删除分享</button>
+            </div>
+        </section>
     </div>
-    <script>
-        document.getElementById('pub-send').addEventListener('click', ev => {
-            ev.preventDefault();
-            const url = new URL('api/streams', location.href);
-            url.searchParams.set('src', src);
-            url.searchParams.set('dst', document.getElementById('pub-url').value);
-            fetch(url, {method: 'POST'});
-        });
-    </script>
-
-    <div id="webrtc">
-        <h2>WebRTC Magic</h2>
-        <label><input type="radio" name="webrtc" value="video+audio" checked>
-            video+audio = simple viewer
-        </label>
-        <label><input type="radio" name="webrtc" value="video+audio+microphone">
-            video+audio+microphone = two way audio from camera
-        </label>
-        <label><input type="radio" name="webrtc" value="camera+microphone">
-            camera+microphone = stream from browser
-        </label>
-        <label><input type="radio" name="webrtc" value="display+speaker">
-            display+speaker = broadcast software
-        </label>
-
-        <br>
-        <li><a id="local" href="webrtc.html?src=">webrtc.html</a> local WebRTC viewer</li>
-
-        <li>
-            <a id="shareadd" href="#">share link</a>
-            <a id="shareget" href="#">copy link</a>
-            <a id="sharedel" href="#">delete</a>
-            external WebRTC viewer
-        </li>
-    </div>
-    <script>
-        function webrtcLinksUpdate() {
-            const media = document.querySelector('input[name="webrtc"]:checked').value;
-
-            const direction = media.indexOf('video') >= 0 || media === 'audio' ? 'src' : 'dst';
-            document.getElementById('local').href = `webrtc.html?${direction}=${src}&media=${media}`;
-
-            const share = document.getElementById('shareget');
-            share.href = `https://go2rtc.org/webtorrent/#${share.dataset.auth}&media=${media}`;
-        }
-
-        function share(method) {
-            const url = new URL('api/webtorrent', location.href);
-            url.searchParams.set('src', src);
-            return fetch(url, {method: method, cache: 'no-cache'});
-        }
-
-        function onshareadd(r) {
-            document.getElementById('shareget').dataset['auth'] = `share=${r.share}&pwd=${r.pwd}`;
-
-            document.getElementById('shareadd').style.display = 'none';
-            document.getElementById('shareget').style.display = '';
-            document.getElementById('sharedel').style.display = '';
-
-            webrtcLinksUpdate();
-        }
-
-        function onsharedel() {
-            document.getElementById('shareadd').style.display = '';
-            document.getElementById('shareget').style.display = 'none';
-            document.getElementById('sharedel').style.display = 'none';
-        }
-
-        function copyTextToClipboard(text) {
-            // https://web.dev/patterns/clipboard/copy-text
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).catch(err => {
-                    console.error(err.name, err.message);
-                });
-            } else {
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                textarea.style.opacity = '0';
-                document.body.appendChild(textarea);
-
-                textarea.focus();
-                textarea.select();
-
-                try {
-                    document.execCommand('copy');
-                } catch (err) {
-                    console.error(err.name, err.message);
-                }
-
-                document.body.removeChild(textarea);
-            }
-        }
-
-        document.getElementById('shareadd').addEventListener('click', ev => {
-            ev.preventDefault();
-            share('POST').then(r => r.json()).then(r => onshareadd(r));
-        });
-
-        document.getElementById('shareget').addEventListener('click', ev => {
-            ev.preventDefault();
-            copyTextToClipboard(ev.target.href);
-        });
-
-        document.getElementById('sharedel').addEventListener('click', ev => {
-            ev.preventDefault();
-            share('DELETE').then(() => onsharedel());
-        });
-
-        document.getElementById('webrtc').addEventListener('click', ev => {
-            if (ev.target.tagName === 'INPUT') webrtcLinksUpdate();
-        });
-
-        share('GET').then(r => {
-            if (r.ok) r.json().then(r => onshareadd(r));
-            else onsharedel();
-        });
-
-        webrtcLinksUpdate();
-    </script>
 </main>
+
+<script>
+    const src = (new URLSearchParams(location.search).get('src') || '').replace(/[<">]/g, '');
+    const enc = encodeURIComponent(src);
+    document.getElementById('stream-title').textContent = src || '流';
+    document.title = `${src || '流'} 链接 - go2rtc`;
+    document.getElementById('quick-play').href = `stream.html?src=${enc}`;
+
+    function addItem(container, {href, title, desc, badge, copy}) {
+        const row = document.createElement('div');
+        row.className = 'link-item';
+
+        const main = document.createElement('div');
+        main.className = 'link-item-main';
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'link-item-title';
+        const link = document.createElement('a');
+        link.href = href;
+        link.textContent = title;
+        if (href.startsWith('http') || href.startsWith('rtsp')) link.target = '_blank';
+        link.rel = 'noopener';
+        titleEl.appendChild(link);
+        if (badge) {
+            const badgeEl = document.createElement('span');
+            badgeEl.className = 'badge';
+            badgeEl.textContent = badge;
+            titleEl.appendChild(badgeEl);
+        }
+
+        const descEl = document.createElement('div');
+        descEl.className = 'link-item-desc';
+        descEl.textContent = desc || '';
+
+        main.append(titleEl, descEl);
+
+        const actions = document.createElement('div');
+        actions.className = 'link-item-actions';
+
+        const open = document.createElement('a');
+        open.className = 'btn btn-secondary btn-sm';
+        open.href = href;
+        open.textContent = '打开';
+        if (href.startsWith('http') || href.startsWith('rtsp')) open.target = '_blank';
+        open.rel = 'noopener';
+        actions.appendChild(open);
+
+        if (copy) {
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn btn-ghost btn-sm';
+            copyBtn.type = 'button';
+            copyBtn.textContent = '复制';
+            copyBtn.addEventListener('click', () => copyTextToClipboard(href).then(() => toast('已复制到剪贴板。', 'success')));
+            actions.appendChild(copyBtn);
+        }
+
+        row.append(main, actions);
+        container.appendChild(row);
+    }
+
+    function escapeHTML(text) {
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function copyTextToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text).catch(error => {
+                console.error(error.name, error.message);
+            });
+        }
+
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        try {
+            document.execCommand('copy');
+        } catch (error) {
+            console.error(error.name, error.message);
+        }
+
+        document.body.removeChild(textarea);
+        return Promise.resolve();
+    }
+
+    const quick = document.getElementById('links-quick');
+    const rtspList = document.getElementById('links-rtsp');
+    const h264List = document.getElementById('links-h264');
+    const mjpegList = document.getElementById('links-mjpeg');
+
+    addItem(quick, {
+        href: `stream.html?src=${enc}`,
+        title: '通用播放器',
+        desc: '自动选择浏览器和编解码器支持的最佳格式。',
+        badge: 'stream.html',
+    });
+    addItem(quick, {
+        href: `api/streams?src=${enc}`,
+        title: '流信息',
+        desc: '活跃的生产者、消费者、轨道和编解码器。',
+        badge: 'JSON',
+    });
+
+    addItem(h264List, {
+        href: `stream.html?src=${enc}&mode=webrtc`,
+        title: 'WebRTC 播放器',
+        desc: '所有浏览器 · H264、PCMU、PCMA、OPUS · Safari 支持 H265',
+        badge: '最低延迟',
+    });
+    addItem(h264List, {
+        href: `stream.html?src=${enc}&mode=mse`,
+        title: 'MSE 播放器',
+        desc: 'Chrome、Firefox、Safari Mac/iPad · H264、H265*、AAC、PCM*、OPUS',
+        badge: '分片 MP4',
+    });
+    addItem(h264List, {
+        href: `api/stream.mp4?src=${enc}`,
+        title: 'MP4 流',
+        desc: '传统 MP4，带 AAC 音频 · H264、H265*、AAC',
+    });
+    addItem(h264List, {
+        href: `api/stream.mp4?src=${enc}&mp4=flac`,
+        title: '带 FLAC 的 MP4 流',
+        desc: '现代 MP4，支持常见音频 · H264、H265*、AAC、FLAC',
+    });
+    addItem(h264List, {
+        href: `api/stream.mp4?src=${enc}&mp4=all`,
+        title: '支持任意音频的 MP4 流',
+        desc: 'H264、H265*、AAC、OPUS、MP3、FLAC · Chrome',
+    });
+    addItem(h264List, {
+        href: `api/frame.mp4?src=${enc}`,
+        title: 'MP4 快照',
+        desc: 'MP4 格式的单帧画面 · H264、H265*',
+    });
+    addItem(h264List, {
+        href: `api/stream.m3u8?src=${enc}`,
+        title: 'HLS / MPEG-TS',
+        desc: 'Safari 和 Chrome Android · H264',
+    });
+    addItem(h264List, {
+        href: `api/stream.m3u8?src=${enc}&mp4`,
+        title: 'HLS / fMP4',
+        desc: 'Safari 和 Chrome Android · H264、H265*、AAC',
+    });
+    addItem(h264List, {
+        href: `api/stream.m3u8?src=${enc}&mp4=flac`,
+        title: '带 FLAC 的 HLS / fMP4',
+        desc: '现代 HLS，支持常见音频 · H264、H265*、AAC、FLAC',
+    });
+
+    addItem(mjpegList, {
+        href: `stream.html?src=${enc}&mode=mjpeg`,
+        title: 'MJPEG 播放器',
+        desc: '所有浏览器 · MJPEG、JPEG',
+    });
+    addItem(mjpegList, {
+        href: `api/stream.mjpeg?src=${enc}`,
+        title: 'MJPEG 流',
+        desc: '通过 HTTP 输出 MJPEG 或 JPEG',
+    });
+    addItem(mjpegList, {
+        href: `api/frame.jpeg?src=${enc}`,
+        title: 'JPEG 快照',
+        desc: 'JPEG 格式的单帧画面',
+    });
+
+    fetch('api', {cache: 'no-cache'}).then(r => r.json()).then(data => {
+        let rtsp = location.host + ':8554';
+        try {
+            const host = data.host.match(/^[^:]+/)[0];
+            const port = data.rtsp.listen.match(/[0-9]+$/)[0];
+            rtsp = `${host}:${port}`;
+        } catch (error) {
+            // keep default
+        }
+
+        addItem(rtspList, {
+            href: `rtsp://${rtsp}/${enc}`,
+            title: 'RTSP 流',
+            desc: '一路视频和一路音频 · 任意编解码器',
+            badge: '推荐',
+            copy: true,
+        });
+        addItem(rtspList, {
+            href: `rtsp://${rtsp}/${enc}?mp4`,
+            title: '用于 MP4 录像的 RTSP',
+            desc: 'Home Assistant 或 Frigate 录像 · H264、H265、AAC',
+        });
+        addItem(rtspList, {
+            href: `rtsp://${rtsp}/${enc}?video=all&audio=all`,
+            title: '包含所有轨道的 RTSP',
+            desc: '暴露所有视频和音频轨道 · 任意编解码器',
+        });
+
+        const command = `ffplay -fflags nobuffer -flags low_delay -rtsp_transport tcp "rtsp://${rtsp}/${src}"`;
+        const row = document.createElement('div');
+        row.className = 'link-item';
+        const main = document.createElement('div');
+        main.className = 'link-item-main';
+        const title = document.createElement('div');
+        title.className = 'link-item-title';
+        title.textContent = '使用 FFplay 测试';
+        const desc = document.createElement('div');
+        desc.className = 'link-item-desc';
+        desc.textContent = '在终端中低延迟播放。';
+        const code = document.createElement('pre');
+        code.className = 'code-block';
+        code.textContent = command;
+        main.append(title, desc, code);
+        row.appendChild(main);
+
+        const actions = document.createElement('div');
+        actions.className = 'link-item-actions';
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn btn-ghost btn-sm';
+        copyBtn.type = 'button';
+        copyBtn.textContent = '复制命令';
+        copyBtn.addEventListener('click', () => copyTextToClipboard(command).then(() => toast('已复制到剪贴板。', 'success')));
+        actions.appendChild(copyBtn);
+        row.appendChild(actions);
+        rtspList.appendChild(row);
+    }).catch(() => {});
+
+    // HomeKit
+    fetch(`api/homekit?id=${enc}`, {cache: 'no-cache'}).then(async response => {
+        if (!response.ok) return;
+
+        const section = document.getElementById('homekit');
+        const container = document.getElementById('links-homekit');
+        section.hidden = false;
+
+        addItem(container, {
+            href: response.url,
+            title: 'HomeKit 信息',
+            desc: '活跃的 HomeKit 连接和配对信息。',
+            badge: 'JSON',
+        });
+
+        const data = await response.json();
+        if (data.setup_code === undefined) return;
+
+        const details = document.createElement('div');
+        details.className = 'link-item';
+        details.innerHTML = `<div class="link-item-main">
+            <div class="link-item-title">设置名称 <span class="badge">${escapeHTML(data.name)}</span></div>
+            <div class="link-item-desc">设置代码 <span class="mono">${escapeHTML(data.setup_code)}</span></div>
+            <div id="homekit-qrcode" style="margin-top:12px"></div>
+        </div>`;
+        container.appendChild(details);
+
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+        script.async = true;
+        script.onload = () => {
+            const categoryID = BigInt(data.category_id);
+            const pin = BigInt(data.setup_code.replaceAll('-', ''));
+            const payload = categoryID << BigInt(31) | BigInt(2 << 27) | pin;
+            const setupURI = `X-HM://${payload.toString(36).toUpperCase().padStart(9, '0')}${data.setup_id}`;
+            new QRCode('homekit-qrcode', {text: setupURI, width: 128, height: 128});
+        };
+        document.head.appendChild(script);
+    }).catch(() => {});
+
+    // Play audio
+    document.getElementById('play-send').addEventListener('click', async () => {
+        const action = document.querySelector('input[name="play"]:checked').value;
+        const url = new URL('api/ffmpeg', location.href);
+        url.searchParams.set('dst', src);
+        url.searchParams.set(action, document.getElementById('play-url').value);
+
+        const response = await fetch(url, {method: 'POST'});
+        toast(response.ok ? '音频已发送到摄像头。' : '错误：' + await response.text(), response.ok ? 'success' : 'error');
+    });
+
+    // Publish
+    document.getElementById('pub-send').addEventListener('click', async () => {
+        const url = new URL('api/streams', location.href);
+        url.searchParams.set('src', src);
+        url.searchParams.set('dst', document.getElementById('pub-url').value);
+
+        const response = await fetch(url, {method: 'POST'});
+        toast(response.ok ? '已开始推流。' : '错误：' + await response.text(), response.ok ? 'success' : 'error');
+    });
+
+    // WebRTC magic
+    function webrtcLinksUpdate() {
+        const media = document.querySelector('input[name="webrtc"]:checked').value;
+        const direction = media.indexOf('video') >= 0 || media === 'audio' ? 'src' : 'dst';
+        document.getElementById('local').href = `webrtc.html?${direction}=${enc}&media=${media}`;
+
+        const share = document.getElementById('shareget');
+        share.href = `https://go2rtc.org/webtorrent/#${share.dataset.auth || ''}&media=${media}`;
+    }
+
+    function share(method) {
+        const url = new URL('api/webtorrent', location.href);
+        url.searchParams.set('src', src);
+        return fetch(url, {method, cache: 'no-cache'});
+    }
+
+    function onshareadd(data) {
+        document.getElementById('shareget').dataset.auth = `share=${data.share}&pwd=${data.pwd}`;
+        document.getElementById('shareadd').hidden = true;
+        document.getElementById('shareget').hidden = false;
+        document.getElementById('sharedel').hidden = false;
+        webrtcLinksUpdate();
+    }
+
+    function onsharedel() {
+        document.getElementById('shareadd').hidden = false;
+        document.getElementById('shareget').hidden = true;
+        document.getElementById('sharedel').hidden = true;
+    }
+
+    document.getElementById('shareadd').addEventListener('click', event => {
+        event.preventDefault();
+        share('POST').then(r => r.json()).then(data => onshareadd(data));
+    });
+
+    document.getElementById('shareget').addEventListener('click', event => {
+        event.preventDefault();
+        copyTextToClipboard(event.currentTarget.href).then(() => toast('分享链接已复制。', 'success'));
+    });
+
+    document.getElementById('sharedel').addEventListener('click', event => {
+        event.preventDefault();
+        share('DELETE').then(() => onsharedel());
+    });
+
+    document.getElementById('webrtc').addEventListener('click', event => {
+        if (event.target.tagName === 'INPUT') webrtcLinksUpdate();
+    });
+
+    share('GET').then(response => {
+        if (response.ok) response.json().then(data => onshareadd(data));
+        else onsharedel();
+    }).catch(() => onsharedel());
+
+    webrtcLinksUpdate();
+</script>
 
 </body>
 </html>

@@ -1,36 +1,58 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>hls - go2rtc</title>
-    <style>
-        body {
-            background-color: black;
-            margin: 0;
-            padding: 0;
-        }
-
-        html, body, video {
-            height: 100%;
-            width: 100%;
-        }
-    </style>
+    <title>HLS 播放 - go2rtc</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="viewer-body">
+<header class="viewer-bar">
+    <a class="brand" href="index.html" aria-label="go2rtc 首页">
+        <span class="brand-mark">g2</span>
+        <span>go2rtc</span>
+    </a>
+    <div class="viewer-title">
+        <strong id="viewer-name">HLS 流</strong>
+        <span id="viewer-meta">正在加载播放列表…</span>
+    </div>
+    <div class="spacer"></div>
+    <a class="btn btn-primary btn-sm" href="index.html">返回</a>
+</header>
+
+<main class="viewer-stage single">
+    <video id="video" autoplay controls playsinline muted></video>
+</main>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
-<video id="video" autoplay controls playsinline muted></video>
 <script>
     // http://192.168.1.123:1984/hls.html?src=demo&mp4
+    const params = new URLSearchParams(location.search);
+    const src = params.get('src');
     const url = new URL('api/stream.m3u8' + location.search, location.href);
 
     const video = document.getElementById('video');
+    const name = document.getElementById('viewer-name');
+    const meta = document.getElementById('viewer-meta');
+
+    if (src) {
+        name.textContent = src;
+        document.title = src + ' HLS 播放 - go2rtc';
+    }
+
+    video.addEventListener('playing', () => meta.textContent = 'HLS 播放中');
+    video.addEventListener('error', () => meta.textContent = '播放出错');
+
     /* global Hls */
-    if (Hls.isSupported()) {
+    if (window.Hls && Hls.isSupported()) {
         const hls = new Hls();
         hls.loadSource(url.toString());
         hls.attachMedia(video);
+        hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data && data.fatal) meta.textContent = 'HLS 错误：' + data.type;
+        });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url.toString();
+    } else {
+        meta.textContent = '当前浏览器不支持 HLS';
     }
 </script>
 </body>

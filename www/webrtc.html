@@ -1,24 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>webrtc - go2rtc</title>
-    <style>
-        body {
-            background-color: black;
-            margin: 0;
-            padding: 0;
-        }
-
-        html, body, video {
-            height: 100%;
-            width: 100%;
-        }
-    </style>
+    <title>WebRTC 播放 - go2rtc</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<video id="video" autoplay controls playsinline muted></video>
+<body class="viewer-body">
+<header class="viewer-bar">
+    <a class="brand" href="index.html" aria-label="go2rtc 首页">
+        <span class="brand-mark">g2</span>
+        <span>go2rtc</span>
+    </a>
+    <div class="viewer-title">
+        <strong id="viewer-name">WebRTC 流</strong>
+        <span id="viewer-meta">正在连接…</span>
+    </div>
+    <div class="spacer"></div>
+    <a class="btn btn-primary btn-sm" href="index.html">返回</a>
+</header>
+
+<main class="viewer-stage single">
+    <video id="video" autoplay controls playsinline muted></video>
+</main>
 <script>
+    const media = new URLSearchParams(location.search).get('media') || 'video+audio';
+    const params = new URLSearchParams(location.search);
+    const streamName = params.get('src') || params.get('dst');
+    const nameEl = document.getElementById('viewer-name');
+    const metaEl = document.getElementById('viewer-meta');
+
+    if (streamName) {
+        nameEl.textContent = streamName;
+        document.title = streamName + ' WebRTC 播放 - go2rtc';
+    }
+    metaEl.textContent = media.replaceAll('+', ' · ');
+
     async function PeerConnection(media) {
         const pc = new RTCPeerConnection({
             iceServers: [{urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302']}]
@@ -68,6 +84,7 @@
             return stream.getTracks();
         } catch (e) {
             console.warn(e);
+            metaEl.textContent = '无法获取权限：' + media;
             return [];
         }
     }
@@ -78,6 +95,8 @@
         const ws = new WebSocket('ws' + url.toString().substring(4));
 
         ws.addEventListener('open', () => {
+            metaEl.textContent = '正在协商 WebRTC…';
+
             pc.addEventListener('icecandidate', ev => {
                 if (!ev.candidate) return;
                 const msg = {type: 'webrtc/candidate', value: ev.candidate.candidate};
@@ -90,6 +109,10 @@
             });
         });
 
+        pc.addEventListener('connectionstatechange', () => {
+            metaEl.textContent = pc.connectionState;
+        });
+
         ws.addEventListener('message', ev => {
             const msg = JSON.parse(ev.data);
             if (msg.type === 'webrtc/candidate') {
@@ -98,10 +121,16 @@
                 pc.setRemoteDescription({type: 'answer', sdp: msg.value});
             }
         });
+
+        ws.addEventListener('close', () => {
+            metaEl.textContent = '已断开';
+        });
     }
 
-    const media = new URLSearchParams(location.search).get('media');
-    connect(media || 'video+audio');
+    connect(media).catch(error => {
+        console.error(error);
+        metaEl.textContent = String(error.message || error);
+    });
 </script>
 </body>
 </html>

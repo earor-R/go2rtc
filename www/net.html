@@ -1,48 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>net - go2rtc</title>
+    <title>网络 - go2rtc</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/vis-network@10.0.2/standalone/umd/vis-network.min.js"></script>
-    <style>
-        html, body, #network {
-            height: 100%;
-        }
-    </style>
 </head>
 <body>
 
 <script src="main.js"></script>
 
-<div id="network"></div>
+<main class="network-page">
+    <section class="page-header">
+        <div class="page-header-copy">
+            <span class="eyebrow">拓扑</span>
+            <h1>网络</h1>
+            <p class="page-subtitle" id="net-subtitle">实时展示生产者、流源和活跃消费者的关系图。</p>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-secondary" id="fit" type="button">适应视图</button>
+            <button class="btn btn-primary" id="refresh" type="button">刷新</button>
+        </div>
+    </section>
+
+    <section class="card network-card">
+        <div id="network"></div>
+        <div class="network-empty" id="net-empty" hidden>
+            <div class="empty-icon">◎</div>
+            <strong>暂无活动连接</strong>
+            <p>开始播放流后，生产者和消费者会出现在拓扑图中。</p>
+        </div>
+        <div class="network-overlay">
+            <span class="status-dot online"></span>
+            <span id="net-status">正在加载拓扑…</span>
+        </div>
+    </section>
+</main>
 
 <script>
     /* global vis */
     window.addEventListener('load', () => {
-        const url = new URL('api/streams.dot' + location.search, location.href);
-
+        const base = new URL('api/streams.dot' + location.search, location.href);
         const container = document.getElementById('network');
+        const statusEl = document.getElementById('net-status');
+        const subtitle = document.getElementById('net-subtitle');
+        const emptyEl = document.getElementById('net-empty');
+
+        if (location.search) {
+            const src = new URLSearchParams(location.search).getAll('src');
+            if (src.length) subtitle.textContent = `${src.join(', ')} 的实时拓扑。`;
+        }
+
         const options = {
+            autoResize: true,
+            background: '#ffffff',
             edges: {
-                font: {align: 'middle'},
+                color: {color: '#d8d8d3', highlight: '#0a0a0a'},
+                font: {align: 'middle', color: '#6b6b70', size: 11, face: 'ui-sans-serif'},
                 smooth: false,
+                width: 1,
             },
-            nodes: {shape: 'box'},
+            nodes: {
+                shape: 'box',
+                color: {
+                    background: '#ffffff',
+                    border: '#e5e5e1',
+                    highlight: {background: '#0a0a0a', border: '#0a0a0a'},
+                },
+                font: {color: '#0a0a0a', size: 12, face: 'ui-sans-serif'},
+                borderWidth: 1,
+                borderWidthSelected: 1,
+                margin: 12,
+                shapeProperties: {borderRadius: 8},
+            },
             physics: false,
         };
 
         let network;
+        let hadNodes = false;
+        let timer = 0;
 
         async function update() {
+            clearTimeout(timer);
+
             try {
-                const response = await fetch(url, {cache: 'no-cache'});
+                const response = await fetch(base, {cache: 'no-cache'});
                 const dotData = await response.text();
                 const data = vis.parseDOTNetwork(dotData);
+                const hasNodes = data.nodes && data.nodes.length > 0;
+
+                emptyEl.hidden = hasNodes;
+                container.style.visibility = hasNodes ? 'visible' : 'hidden';
 
                 if (!network) {
                     network = new vis.Network(container, data, options);
                     network.storePositions();
+                    if (hasNodes) network.fit({animation: false});
                 } else {
                     const positions = network.getPositions();
                     const viewPosition = network.getViewPosition();
@@ -55,16 +109,32 @@
                         network.moveNode(nodeId, positions[nodeId].x, positions[nodeId].y);
                     }
 
-                    network.moveTo({position: viewPosition, scale: scale});
-
-                    network.selectNodes(selectedNodes);
+                    if (hasNodes && !hadNodes) {
+                        network.fit({animation: false});
+                    } else {
+                        network.moveTo({position: viewPosition, scale});
+                        network.selectNodes(selectedNodes);
+                    }
                 }
+
+                hadNodes = hasNodes;
+                statusEl.textContent = `已更新 ${new Date().toLocaleTimeString()}`;
             } catch (error) {
                 console.error('Error fetching or updating network data:', error);
+                statusEl.textContent = '拓扑更新失败';
             }
 
-            setTimeout(update, 5000);
+            timer = setTimeout(update, 5000);
         }
+
+        document.getElementById('refresh').addEventListener('click', () => {
+            statusEl.textContent = '正在刷新…';
+            update();
+        });
+
+        document.getElementById('fit').addEventListener('click', () => {
+            if (network) network.fit({animation: true});
+        });
 
         update();
     });

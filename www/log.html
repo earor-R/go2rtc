@@ -1,141 +1,195 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>log - go2rtc</title>
-    <style>
-        main > div {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        table tbody {
-            font-size: 13px;
-        }
-
-        .trace {
-            color: #585858 !important;
-        }
-
-        .debug {
-            color: #808080 !important;
-        }
-
-        .info {
-            color: #0174DF !important;
-        }
-
-        .warn {
-            color: #FF9966 !important;
-        }
-
-        .error {
-            color: #DF0101 !important;
-        }
-    </style>
+    <title>日志 - go2rtc</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <script src="main.js"></script>
 
-<main>
-    <div>
-        <button id="clean">Clean</button>
-        <button id="update">Auto Update: ON</button>
-        <button id="reverse">Reverse Log Order: OFF</button>
-    </div>
-    <table>
-        <thead>
-        <tr>
-            <th style="width: 100px">Time</th>
-            <th style="width: 40px">Level</th>
-            <th>Message</th>
-        </tr>
-        </thead>
-        <tbody id="log">
-        </tbody>
-    </table>
+<main class="page">
+    <section class="page-header">
+        <div class="page-header-copy">
+            <span class="eyebrow">诊断</span>
+            <h1>日志</h1>
+            <p class="page-subtitle">查看服务器活动，按级别筛选并快速定位错误。</p>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-secondary" id="reverse" type="button">顺序：最早优先</button>
+            <button class="btn btn-secondary" id="update" type="button" aria-pressed="true">自动更新：开</button>
+            <button class="btn btn-ghost" id="clean" type="button">清空日志</button>
+        </div>
+    </section>
+
+    <section class="card toolbar" aria-label="Log controls">
+        <label class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="m20 20-3.5-3.5"></path>
+            </svg>
+            <input class="input" id="search" type="search" placeholder="搜索日志" autocomplete="off">
+        </label>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">级别</span>
+            <label class="chip"><input type="checkbox" name="level" value="error" checked><span class="chip-dot"></span>错误</label>
+            <label class="chip"><input type="checkbox" name="level" value="warn" checked><span class="chip-dot"></span>警告</label>
+            <label class="chip"><input type="checkbox" name="level" value="info" checked><span class="chip-dot"></span>信息</label>
+            <label class="chip"><input type="checkbox" name="level" value="debug"><span class="chip-dot"></span>调试</label>
+            <label class="chip"><input type="checkbox" name="level" value="trace"><span class="chip-dot"></span>追踪</label>
+        </div>
+
+        <div class="spacer"></div>
+
+        <span class="badge" id="log-count">0 entries</span>
+    </section>
+
+    <section class="card log-panel">
+        <div class="log-list" id="log"></div>
+    </section>
+
+    <footer class="page-footer">
+        <span id="log-status">每 5 秒自动更新</span>
+        <span>追踪和调试级别可能包含敏感数据</span>
+    </footer>
 </main>
 
 <script>
-    document.getElementById('clean').addEventListener('click', async () => {
-        const r = await fetch('api/log', {method: 'DELETE'});
-        if (r.ok) reload();
-        alert(await r.text());
-    });
+    const logEl = document.getElementById('log');
+    const countEl = document.getElementById('log-count');
+    const statusEl = document.getElementById('log-status');
+    const searchInput = document.getElementById('search');
+    const cleanBtn = document.getElementById('clean');
+    const updateBtn = document.getElementById('update');
+    const reverseBtn = document.getElementById('reverse');
 
-    // Sanitizes the input text to prevent XSS when inserting into the DOM
+    let reverseOrder = false;
+    let autoUpdateEnabled = true;
+    let entries = [];
+
     function escapeHTML(text) {
-        return text
+        return String(text)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;')
-            .replace(/\n/g, '<br>');
+            .replace(/'/g, '&#039;');
     }
 
-    const reverseBtn = document.getElementById('reverse');
-    const update = document.getElementById('update');
+    const LEVEL_LABELS = {error: '错误', warn: '警告', info: '信息', debug: '调试', trace: '追踪'};
 
-    let reverseOrder = false;
-    let autoUpdateEnabled = true;
+    function levelLabel(level) {
+        return LEVEL_LABELS[level] || level;
+    }
 
-    reverseBtn.textContent = `Reverse Log Order: ${reverseOrder ? 'ON' : 'OFF'}`;
-    update.textContent = `Auto Update: ${autoUpdateEnabled ? 'ON' : 'OFF'}`;
+    function selectedLevels() {
+        return new Set(Array.from(document.querySelectorAll('input[name="level"]:checked'), input => input.value));
+    }
+
+    function render() {
+        const query = searchInput.value.trim().toLowerCase();
+        const levels = selectedLevels();
+        const visible = entries.filter(entry => {
+            if (!levels.has(entry.level)) return false;
+            if (query && !entry.text.toLowerCase().includes(query)) return false;
+            return true;
+        });
+
+        countEl.textContent = `${visible.length} 条`;
+
+        if (!visible.length) {
+            logEl.innerHTML = '<div class="table-empty">没有符合当前筛选条件的日志。</div>';
+            return;
+        }
+
+        logEl.innerHTML = visible.map(entry => `
+            <div class="log-row ${escapeHTML(entry.level)}">
+                <span class="log-time">${escapeHTML(entry.time)}</span>
+                <span class="log-level">${escapeHTML(levelLabel(entry.level))}</span>
+                <span class="log-msg">${escapeHTML(entry.text)}</span>
+            </div>
+        `).join('');
+    }
 
     function applyLogStyling(jsonlines) {
-        const KEYS = ['time', 'level', 'message'];
-        let lines = JSON.parse('[' + jsonlines.trimEnd().replaceAll('\n', ',') + ']');
-        if (reverseOrder) {
-            lines = lines.reverse();
-        }
-        return lines.map(line => {
-            const ts = new Date(line['time']).toLocaleString(undefined, {
+        const keys = ['time', 'level', 'message'];
+        const lines = JSON.parse('[' + jsonlines.trimEnd().replaceAll('\n', ',') + ']');
+
+        entries = lines.map(line => {
+            const level = String(line.level || 'info').toLowerCase();
+            const ts = new Date(line.time).toLocaleString(undefined, {
                 hour: 'numeric',
                 minute: 'numeric',
                 second: 'numeric',
-                fractionalSecondDigits: 3
+                fractionalSecondDigits: 3,
             });
-            const msg = Object.keys(line).reduce((msg, key) => {
-                return KEYS.indexOf(key) < 0 ? `${msg} ${key}=${line[key]}` : msg;
-            }, line['message']);
-            return `<tr class="${line['level']}"><td>${ts}</td><td>${line['level']}</td><td>${escapeHTML(msg)}</td></tr>`;
-        }).join('');
+            const text = Object.keys(line).reduce((message, key) => {
+                return keys.indexOf(key) < 0 ? `${message} ${key}=${line[key]}` : message;
+            }, line.message || '');
+
+            return {time: ts, level, text};
+        });
+
+        if (reverseOrder) entries.reverse();
+        render();
     }
 
-    function reload() {
-        const url = new URL('api/log', location.href);
-        fetch(url, {cache: 'no-cache'})
-            .then(response => response.text())
-            .then(data => {
-                // Apply styling to the log data
-                document.getElementById('log').innerHTML = applyLogStyling(data);
-            })
-            .catch(error => {
-                console.error('An error occurred:', error);
-            });
+    async function reload() {
+        try {
+            const response = await fetch('api/log', {cache: 'no-cache'});
+            const text = await response.text();
+            if (!text.trim()) {
+                entries = [];
+                render();
+                return;
+            }
+            applyLogStyling(text);
+            statusEl.textContent = autoUpdateEnabled ? '每 5 秒自动更新' : '自动更新已暂停';
+        } catch (error) {
+            console.error('An error occurred:', error);
+            statusEl.textContent = '日志加载失败';
+        }
     }
 
-    reload();
-
-    update.textContent = `Auto Update: ${autoUpdateEnabled ? 'ON' : 'OFF'}`;
-    update.addEventListener('click', () => {
-        autoUpdateEnabled = !autoUpdateEnabled;
-        update.textContent = `Auto Update: ${autoUpdateEnabled ? 'ON' : 'OFF'}`;
+    cleanBtn.addEventListener('click', async () => {
+        const response = await fetch('api/log', {method: 'DELETE'});
+        if (response.ok) {
+            toast('日志已清空。', 'success');
+            await reload();
+        } else {
+            toast(await response.text(), 'error');
+        }
     });
 
-    // Toggle log order
-    reverseBtn.textContent = `Reverse Log Order: ${reverseOrder ? 'ON' : 'OFF'}`;
+    updateBtn.addEventListener('click', () => {
+        autoUpdateEnabled = !autoUpdateEnabled;
+        updateBtn.textContent = autoUpdateEnabled ? '自动更新：开' : '自动更新：关';
+        updateBtn.setAttribute('aria-pressed', String(autoUpdateEnabled));
+        statusEl.textContent = autoUpdateEnabled ? '每 5 秒自动更新' : '自动更新已暂停';
+        if (autoUpdateEnabled) reload();
+    });
+
     reverseBtn.addEventListener('click', () => {
         reverseOrder = !reverseOrder;
-        reverseBtn.textContent = `Reverse Log Order: ${reverseOrder ? 'ON' : 'OFF'}`;
-        reload(); // Reload logs to apply the new order
+        reverseBtn.textContent = reverseOrder ? '顺序：最新优先' : '顺序：最早优先';
+        entries.reverse();
+        render();
     });
 
-    // Reload the logs every 5 seconds
+    searchInput.addEventListener('input', render);
+    document.querySelectorAll('input[name="level"]').forEach(input => input.addEventListener('change', render));
+
+    document.addEventListener('keydown', event => {
+        if (event.key === '/' && document.activeElement !== searchInput) {
+            event.preventDefault();
+            searchInput.focus();
+        }
+    });
+
+    reload();
     setInterval(() => {
         if (autoUpdateEnabled) reload();
     }, 5000);

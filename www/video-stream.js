@@ -6,14 +6,15 @@ import {VideoRTC} from './video-rtc.js';
  */
 class VideoStream extends VideoRTC {
     set divMode(value) {
-        this.querySelector('.mode').innerText = value;
+        this.dataset.mode = value;
+        this.querySelector('.mode').innerText = value === 'loading' ? '加载中' : value;
         this.querySelector('.status').innerText = '';
     }
 
     set divError(value) {
-        const state = this.querySelector('.mode').innerText;
-        if (state !== 'loading') return;
-        this.querySelector('.mode').innerText = 'error';
+        if (this.dataset.mode !== 'loading') return;
+        this.dataset.mode = 'error';
+        this.querySelector('.mode').innerText = '错误';
         this.querySelector('.status').innerText = value;
     }
 
@@ -35,10 +36,36 @@ class VideoStream extends VideoRTC {
             left: 0;
             right: 0;
             padding: 12px;
-            color: white;
             display: flex;
+            align-items: flex-start;
             justify-content: space-between;
+            gap: 8px;
             pointer-events: none;
+        }
+        .status,
+        .mode {
+            display: none;
+            max-width: 70%;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(10, 10, 10, .62);
+            color: #fff;
+            font: 500 11px/1.4 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            letter-spacing: .01em;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .status:not(:empty),
+        .mode:not(:empty) {
+            display: block;
+        }
+        .mode {
+            margin-left: auto;
+            text-transform: uppercase;
+            letter-spacing: .08em;
         }
         </style>
         <div class="info">

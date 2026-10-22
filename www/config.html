@@ -1,32 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>config - go2rtc</title>
-    <style>
-        html, body {
-            height: 100%;
-        }
-
-        #config {
-            flex: 1 1 auto;
-            border-top: 1px solid #ccc;
-            min-height: 300px;
-        }
-    </style>
+    <title>配置 - go2rtc</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <script src="main.js"></script>
 
-<main>
-    <div>
-        <button id="save">Save & Restart</button>
-        <button id="suggest" title="ctrl + space">Suggest</button>
+<div class="editor-page">
+    <section class="page-header">
+        <div class="page-header-copy">
+            <span class="eyebrow">配置</span>
+            <h1>配置</h1>
+            <p class="page-subtitle">直接编辑 YAML 配置。保存后会应用更改并重启 go2rtc。</p>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-secondary" id="suggest" type="button" title="Ctrl + Space">代码提示</button>
+            <button class="btn btn-primary" id="save" type="button">保存并重启</button>
+        </div>
+    </section>
+
+    <div class="editor-shell">
+        <div id="config"></div>
     </div>
-</main>
-<div id="config"></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs/loader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
@@ -116,8 +116,7 @@
 
         ensureYamlLanguage();
 
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        monaco.editor.setTheme(prefersDark ? 'vs-dark' : 'vs');
+        monaco.editor.setTheme('vs');
 
         const editor = monaco.editor.create(container, {
             language: 'yaml',
@@ -130,6 +129,7 @@
             wordBasedSuggestions: false,
             suggest: {showWords: false},
             scrollBeyondLastLine: false,
+            placeholder: '在此添加流、API 设置和模块…',
         });
 
         const stripInlineComment = (line) => {
@@ -1174,7 +1174,7 @@
 
         const layout = () => {
             const top = container.getBoundingClientRect().top;
-            container.style.height = `${Math.max(200, window.innerHeight - top)}px`;
+            container.style.height = `${Math.max(200, window.innerHeight - top - 32)}px`;
             editor.layout();
         };
         window.addEventListener('resize', layout);
@@ -1185,17 +1185,17 @@
         document.getElementById('save').addEventListener('click', async () => {
             let r = await fetch('api/config', {cache: 'no-cache'});
             if (r.ok && dump !== await r.text()) {
-                alert('Config was changed from another place. Refresh the page and make changes again');
+                toast('配置已在其他地方被修改。请刷新页面后重新更改。', 'error');
                 return;
             }
 
             r = await fetch('api/config', {method: 'POST', body: editor.getValue()});
             if (r.ok) {
-                alert('OK');
+                toast('配置已保存，正在重启…', 'success');
                 dump = editor.getValue();
                 await fetch('api/restart', {method: 'POST'});
             } else {
-                alert(await r.text());
+                toast(await r.text(), 'error');
             }
         });
 
@@ -1213,14 +1213,14 @@
 
             const r = await fetch('api/config', {cache: 'no-cache'});
             if (r.status === 410) {
-                alert('Config file is not set');
+                toast('未设置配置文件。', 'error');
             } else if (r.status === 404) {
                 editor.setValue(''); // config file not exist
             } else if (r.ok) {
                 dump = await r.text();
                 editor.setValue(dump);
             } else {
-                alert(`Unknown error: ${r.statusText} (${r.status})`);
+                toast(`未知错误：${r.statusText} (${r.status})`, 'error');
             }
         })();
     });

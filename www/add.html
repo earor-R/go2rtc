@@ -1,569 +1,611 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>add - go2rtc</title>
-    <style>
-        main > button {
-            background-color: #444;
-            color: white;
-            cursor: pointer;
-            padding: 14px;
-            width: 100%;
-            border: none;
-            text-align: left;
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        main > div {
-            display: none;
-            gap: 10px;
-        }
-    </style>
+    <title>添加源 - go2rtc</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <script src="main.js"></script>
 
+<main class="page">
+    <section class="page-header">
+        <div class="page-header-copy">
+            <span class="eyebrow">源</span>
+            <h1>添加源</h1>
+            <p class="page-subtitle">粘贴流地址、发现局域网设备，或连接摄像头账号。</p>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-secondary" href="index.html">返回流列表</a>
+        </div>
+    </section>
+
+    <section class="tool-section">
+        <div class="tool-section-head">
+            <h2>快速添加</h2>
+            <p>直接粘贴地址，立即创建流。</p>
+        </div>
+        <div class="tool-grid">
+            <article class="card tool">
+                <button class="tool-head" id="stream" type="button" aria-expanded="false">临时流</button>
+                <div class="tool-body">
+                    <p class="hint">添加仅在下次重启前有效的临时流。</p>
+                    <form id="stream-form">
+                        <label class="field">
+                            <span>流名称</span>
+                            <input class="input" type="text" name="name" placeholder="摄像头-厨房">
+                        </label>
+                        <label class="field">
+                            <span>源地址</span>
+                            <input class="input" type="text" name="src" placeholder="rtsp://用户名:密码@192.168.1.10/stream" required>
+                        </label>
+                        <button class="btn btn-primary" type="submit">添加流</button>
+                    </form>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="tool-section">
+        <div class="tool-section-head">
+            <h2>设备发现</h2>
+            <p>扫描并连接局域网内的摄像头。</p>
+        </div>
+        <div class="tool-grid">
+            <article class="card tool">
+                <button class="tool-head" id="onvif" type="button" aria-expanded="false">ONVIF</button>
+                <div class="tool-body">
+                    <form id="onvif-form">
+                        <label class="field"><span>摄像头地址</span><input class="input" type="text" name="src" placeholder="onvif://用户名:密码@192.168.1.123:80" required></label>
+                        <button class="btn btn-primary" type="submit">测试连接</button>
+                    </form>
+                    <div class="table-wrap"><table id="onvif-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="dvrip" type="button" aria-expanded="false">DVRIP</button>
+                <div class="tool-body">
+                    <p class="hint">发现兼容的 DVRIP 摄像头。</p>
+                    <div class="table-wrap"><table id="dvrip-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="gopro" type="button" aria-expanded="false">GoPro</button>
+                <div class="tool-body">
+                    <p class="hint">查找通过 Wi-Fi 连接的 GoPro 相机。</p>
+                    <div class="table-wrap"><table id="gopro-table" class="data-table"></table></div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="tool-section">
+        <div class="tool-section-head">
+            <h2>智能家居平台</h2>
+            <p>从 Home Assistant 和 HomeKit 接入现有设备。</p>
+        </div>
+        <div class="tool-grid">
+            <article class="card tool">
+                <button class="tool-head" id="hass" type="button" aria-expanded="false">Home Assistant</button>
+                <div class="tool-body">
+                    <p class="hint">Home Assistant 中公开的摄像头。</p>
+                    <div class="table-wrap"><table id="hass-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="homekit" type="button" aria-expanded="false">Apple HomeKit</button>
+                <div class="tool-body">
+                    <form id="homekit-pair">
+                        <label class="field"><span>流 ID</span><input class="input" type="text" name="id" placeholder="流 ID" required></label>
+                        <label class="field"><span>源</span><input class="input" type="text" name="src" placeholder="源地址" required></label>
+                        <label class="field"><span>PIN 码</span><input class="input" type="text" name="pin" placeholder="PIN 码" required></label>
+                        <button class="btn btn-primary" type="submit">配对</button>
+                    </form>
+                    <form id="homekit-unpair">
+                        <label class="field"><span>配对 ID</span><input class="input" type="text" name="id" placeholder="流 ID" required></label>
+                        <button class="btn btn-secondary" type="submit">解除配对</button>
+                    </form>
+                    <div class="table-wrap"><table id="homekit-table" class="data-table"></table></div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="tool-section">
+        <div class="tool-section-head">
+            <h2>厂商账号</h2>
+            <p>使用官方账号登录并加载设备。</p>
+        </div>
+        <div class="tool-grid">
+            <article class="card tool">
+                <button class="tool-head" id="nest" type="button" aria-expanded="false">Google Nest</button>
+                <div class="tool-body">
+                    <form id="nest-form">
+                        <label class="field"><span>客户端 ID</span><input class="input" type="text" name="client_id" placeholder="客户端 ID" required></label>
+                        <label class="field"><span>客户端密钥</span><input class="input" type="text" name="client_secret" placeholder="客户端密钥" required></label>
+                        <label class="field"><span>刷新令牌</span><input class="input" type="text" name="refresh_token" placeholder="刷新令牌" required></label>
+                        <label class="field"><span>项目 ID</span><input class="input" type="text" name="project_id" placeholder="项目 ID" required></label>
+                        <button class="btn btn-primary" type="submit">登录</button>
+                    </form>
+                    <div class="table-wrap"><table id="nest-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="ring" type="button" aria-expanded="false">Ring</button>
+                <div class="tool-body">
+                    <form id="ring-credentials-form">
+                        <label class="field"><span>邮箱</span><input class="input" type="email" name="email" placeholder="邮箱" required></label>
+                        <label class="field"><span>密码</span><input class="input" type="password" name="password" placeholder="密码" required></label>
+                        <div id="tfa-field" style="display:none; width:100%">
+                            <label class="field"><span>两步验证码</span><input class="input" type="text" name="code" placeholder="两步验证码"></label>
+                            <p class="hint" id="tfa-prompt"></p>
+                        </div>
+                        <button class="btn btn-primary" type="submit">登录</button>
+                    </form>
+                    <form id="ring-token-form">
+                        <label class="field"><span>刷新令牌</span><input class="input" type="text" name="refresh_token" placeholder="刷新令牌" required></label>
+                        <button class="btn btn-secondary" type="submit">使用令牌</button>
+                    </form>
+                    <div class="table-wrap"><table id="ring-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="tuya" type="button" aria-expanded="false">Tuya</button>
+                <div class="tool-body">
+                    <form id="tuya-credentials-form">
+                        <label class="field">
+                            <span>区域</span>
+                            <select class="select" name="region" required>
+                                <option value="protect-eu.ismartlife.me">欧洲中部</option>
+                                <option value="protect-we.ismartlife.me">欧洲东部</option>
+                                <option value="protect-us.ismartlife.me">美国西部</option>
+                                <option value="protect-ue.ismartlife.me">美国东部</option>
+                                <option value="protect.ismartlife.me">中国</option>
+                                <option value="protect-in.ismartlife.me">印度</option>
+                            </select>
+                        </label>
+                        <label class="field"><span>邮箱</span><input class="input" type="email" name="email" placeholder="邮箱" required></label>
+                        <label class="field"><span>密码</span><input class="input" type="password" name="password" placeholder="密码" required></label>
+                        <button class="btn btn-primary" type="submit">登录</button>
+                    </form>
+                    <div class="table-wrap"><table id="tuya-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="wyze" type="button" aria-expanded="false">Wyze</button>
+                <div class="tool-body">
+                    <p class="hint">需要 API Key。<a href="https://support.wyze.com/hc/en-us/articles/16129834216731" target="_blank" rel="noopener">获取你的 API Key</a></p>
+                    <form id="wyze-login-form">
+                        <label class="field"><span>API ID</span><input class="input" type="text" name="api_id" placeholder="API ID" required></label>
+                        <label class="field"><span>API Key</span><input class="input" type="text" name="api_key" placeholder="API Key" required></label>
+                        <label class="field"><span>邮箱</span><input class="input" type="email" name="email" placeholder="邮箱" required></label>
+                        <label class="field"><span>密码</span><input class="input" type="password" name="password" placeholder="密码" required></label>
+                        <button class="btn btn-primary" type="submit">登录</button>
+                    </form>
+                    <form id="wyze-devices-form">
+                        <label class="field"><span>账号</span><select class="select" id="wyze-id" name="id" required></select></label>
+                        <button class="btn btn-secondary" type="submit">加载设备</button>
+                    </form>
+                    <div class="table-wrap"><table id="wyze-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="xiaomi" type="button" aria-expanded="false">Xiaomi</button>
+                <div class="tool-body">
+                    <form id="xiaomi-login-form">
+                        <label class="field"><span>用户名</span><input class="input" type="text" name="username" placeholder="用户名" required></label>
+                        <label class="field"><span>密码</span><input class="input" type="password" name="password" placeholder="密码" required></label>
+                        <button class="btn btn-primary" type="submit">登录</button>
+                    </form>
+                    <form id="xiaomi-captcha-form">
+                        <img id="xiaomi-captcha" alt="Xiaomi captcha">
+                        <label class="field"><span>验证码</span><input class="input" type="text" name="captcha" placeholder="验证码" required></label>
+                        <button class="btn btn-secondary" type="submit">发送</button>
+                    </form>
+                    <form id="xiaomi-verify-form">
+                        <p class="hint" id="xiaomi-verify"></p>
+                        <label class="field"><span>验证码</span><input class="input" type="text" name="verify" placeholder="验证码" required></label>
+                        <button class="btn btn-secondary" type="submit">发送</button>
+                    </form>
+                    <form id="xiaomi-devices-form">
+                        <label class="field"><span>账号</span><select class="select" id="xiaomi-id" name="id" required></select></label>
+                        <label class="field">
+                            <span>区域</span>
+                            <select class="select" name="region" required>
+                                <option value="cn">中国</option>
+                                <option value="de">欧洲</option>
+                                <option value="i2">印度</option>
+                                <option value="ru">俄罗斯</option>
+                                <option value="sg">新加坡</option>
+                                <option value="us">美国</option>
+                            </select>
+                        </label>
+                        <button class="btn btn-secondary" type="submit">加载设备</button>
+                    </form>
+                    <div class="table-wrap"><table id="xiaomi-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="roborock" type="button" aria-expanded="false">Roborock</button>
+                <div class="tool-body">
+                    <form id="roborock-form">
+                        <label class="field"><span>用户名</span><input class="input" type="text" name="username" placeholder="用户名" required></label>
+                        <label class="field"><span>密码</span><input class="input" type="password" name="password" placeholder="密码" required></label>
+                        <button class="btn btn-primary" type="submit">登录</button>
+                    </form>
+                    <div class="table-wrap"><table id="roborock-table" class="data-table"></table></div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="tool-section">
+        <div class="tool-section-head">
+            <h2>本地硬件</h2>
+            <p>使用服务器上的音频、视频和硬件加速能力。</p>
+        </div>
+        <div class="tool-grid">
+            <article class="card tool">
+                <button class="tool-head" id="alsa" type="button" aria-expanded="false">ALSA 音频</button>
+                <div class="tool-body">
+                    <p class="hint">Linux 音频采集设备。</p>
+                    <div class="table-wrap"><table id="alsa-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="v4l2" type="button" aria-expanded="false">V4L2 视频</button>
+                <div class="tool-body">
+                    <p class="hint">Linux 视频采集设备。</p>
+                    <div class="table-wrap"><table id="v4l2-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="devices" type="button" aria-expanded="false">FFmpeg USB 设备</button>
+                <div class="tool-body">
+                    <p class="hint">FFmpeg 检测到的本地采集设备。</p>
+                    <div class="table-wrap"><table id="devices-table" class="data-table"></table></div>
+                </div>
+            </article>
+            <article class="card tool">
+                <button class="tool-head" id="hardware" type="button" aria-expanded="false">FFmpeg 硬件加速</button>
+                <div class="tool-body">
+                    <p class="hint">可用的硬件加速编码器。</p>
+                    <div class="table-wrap"><table id="hardware-table" class="data-table"></table></div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="tool-section">
+        <div class="tool-section-head">
+            <h2>其他</h2>
+            <p>附加流来源和分享功能。</p>
+        </div>
+        <div class="tool-grid">
+            <article class="card tool">
+                <button class="tool-head" id="webtorrent" type="button" aria-expanded="false">WebTorrent 分享</button>
+                <div class="tool-body">
+                    <p class="hint">通过 go2rtc.org 分享的流。</p>
+                    <div class="table-wrap"><table id="webtorrent-table" class="data-table"></table></div>
+                </div>
+            </article>
+        </div>
+    </section>
+</main>
+
 <script>
     function drawTable(table, data) {
         const cols = ['id', 'name', 'info', 'url', 'location'];
-        const th = (row) => cols.reduce((html, k) => k in row ? `${html}<th>${k}</th>` : html, '<tr>') + '</tr>';
-        const td = (row) => cols.reduce((html, k) => k in row ? `${html}<td style="word-break: break-word; white-space: normal;">${row[k]}</td>` : html, '<tr>') + '</tr>';
+        const rows = data && Array.isArray(data.sources) ? data.sources : [];
 
-        const thead = th(data.sources[0]);
-        const tbody = data.sources.reduce((html, source) => `${html}${td(source)}`, '');
+        if (!rows.length) {
+            table.innerHTML = '<tbody><tr><td class="table-empty">未发现设备。</td></tr></tbody>';
+            return;
+        }
 
-        table.innerHTML = `<thead>${thead}</thead><tbody>${tbody}</tbody>`;
+        const labels = {id: 'ID', name: '名称', info: '信息', url: '地址', location: '位置'};
+        const th = row => cols.reduce((html, key) => key in row ? `${html}<th>${labels[key] || escapeHTML(key)}</th>` : html, '<tr>') + '</tr>';
+        const td = row => cols.reduce((html, key) => key in row ? `${html}<td>${escapeHTML(row[key])}</td>` : html, '<tr>') + '</tr>';
+
+        table.innerHTML = `<thead>${th(rows[0])}</thead><tbody>${rows.reduce((html, row) => html + td(row), '')}</tbody>`;
     }
 
     async function getSources(tableID, url) {
         const table = document.getElementById(tableID);
-        table.innerText = 'loading...';
+        table.innerHTML = '<tbody><tr><td class="table-empty">加载中…</td></tr></tbody>';
 
-        const r = typeof url === 'string' ? await fetch(url, {cache: 'no-cache'}) : url;
-        if (!r.ok) {
-            table.innerText = await r.text();
+        try {
+            const response = typeof url === 'string' ? await fetch(url, {cache: 'no-cache'}) : url;
+
+            if (!response.ok) {
+                table.innerHTML = `<tbody><tr><td class="table-empty">${escapeHTML(await response.text())}</td></tr></tbody>`;
+                return;
+            }
+
+            const data = await response.json();
+            drawTable(table, data);
+        } catch (error) {
+            table.innerHTML = `<tbody><tr><td class="table-empty">${escapeHTML(String(error.message || error))}</td></tr></tbody>`;
+        }
+    }
+
+    function escapeHTML(text) {
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function bindTool(id, loader) {
+        const button = document.getElementById(id);
+        const body = button.nextElementSibling;
+        let loaded = false;
+
+        button.addEventListener('click', async () => {
+            const open = !body.classList.contains('open');
+            body.classList.toggle('open', open);
+            button.setAttribute('aria-expanded', String(open));
+
+            if (!open || loaded || !loader) return;
+            loaded = true;
+
+            try {
+                await loader();
+            } catch (error) {
+                loaded = false;
+                toast(String(error.message || error), 'error');
+            }
+        });
+    }
+
+    // Temporary stream
+    bindTool('stream');
+    document.getElementById('stream-form').addEventListener('submit', async event => {
+        event.preventDefault();
+
+        const url = new URL('api/streams', location.href);
+        url.searchParams.set('name', event.target.elements.name.value);
+        url.searchParams.set('src', event.target.elements.src.value);
+
+        try {
+            const response = await fetch(url, {method: 'PUT'});
+            if (!response.ok) throw new Error((await response.text()) || '无法添加流');
+            toast('流已添加。', 'success');
+            event.target.reset();
+        } catch (error) {
+            toast(String(error.message || error), 'error');
+        }
+    });
+
+    // Simple discovery tools
+    bindTool('alsa', () => getSources('alsa-table', 'api/alsa'));
+    bindTool('dvrip', () => getSources('dvrip-table', 'api/dvrip'));
+    bindTool('devices', () => getSources('devices-table', 'api/ffmpeg/devices'));
+    bindTool('hardware', () => getSources('hardware-table', 'api/ffmpeg/hardware'));
+    bindTool('gopro', () => getSources('gopro-table', 'api/gopro'));
+    bindTool('hass', () => getSources('hass-table', 'api/hass'));
+    bindTool('v4l2', () => getSources('v4l2-table', 'api/v4l2'));
+    bindTool('webtorrent', () => getSources('webtorrent-table', 'api/webtorrent'));
+
+    // HomeKit
+    async function reloadHomeKit() {
+        await getSources('homekit-table', 'api/discovery/homekit');
+
+        const rows = document.querySelectorAll('#homekit-table tbody tr');
+        rows.forEach((row, index) => {
+            if (!row.children[2] || !row.children[3]) return;
+            let commands = '';
+            if (row.children[2].innerText.indexOf('status=1') > 0) {
+                commands += '<a href="#">配对</a>';
+            } else if (row.children[3].innerText) {
+                commands += '<a href="#">解除配对</a>';
+            }
+            row.innerHTML += `<td>${commands}</td>`;
+        });
+
+        const headRow = document.querySelector('#homekit-table thead tr');
+        if (headRow) headRow.innerHTML += '<th>操作</th>';
+    }
+
+    bindTool('homekit', reloadHomeKit);
+
+    document.getElementById('homekit-table').addEventListener('click', event => {
+        if (event.target.innerText === '配对') {
+            const form = document.getElementById('homekit-pair');
+            const row = event.target.closest('tr');
+            form.elements.id.value = row.children[0].innerText;
+            form.elements.src.value = row.children[2].innerText;
+        } else if (event.target.innerText === '解除配对') {
+            const form = document.getElementById('homekit-unpair');
+            const row = event.target.closest('tr');
+            form.elements.id.value = row.children[3].innerText;
+        }
+    });
+
+    document.getElementById('homekit-pair').addEventListener('submit', async event => {
+        event.preventDefault();
+        const params = new URLSearchParams(new FormData(event.target));
+        const response = await fetch('api/homekit', {method: 'POST', body: params});
+        toast(response.ok ? '配对成功。' : '错误：' + await response.text(), response.ok ? 'success' : 'error');
+        await reloadHomeKit();
+    });
+
+    document.getElementById('homekit-unpair').addEventListener('submit', async event => {
+        event.preventDefault();
+        const params = new URLSearchParams(new FormData(event.target));
+        const response = await fetch('api/homekit?' + params.toString(), {method: 'DELETE'});
+        toast(response.ok ? '已解除配对。' : '错误：' + await response.text(), response.ok ? 'success' : 'error');
+        await reloadHomeKit();
+    });
+
+    // Nest
+    bindTool('nest');
+    document.getElementById('nest-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const query = new URLSearchParams(new FormData(event.target));
+        const url = new URL('api/nest?' + query.toString(), location.href);
+        await getSources('nest-table', await fetch(url, {cache: 'no-cache'}));
+    });
+
+    // ONVIF
+    bindTool('onvif', () => getSources('onvif-table', 'api/onvif'));
+    document.getElementById('onvif-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const url = new URL('api/onvif', location.href);
+        url.searchParams.set('src', event.target.elements.src.value);
+        await getSources('onvif-table', url.toString());
+    });
+
+    // Ring
+    bindTool('ring');
+
+    async function handleRingAuth(event) {
+        event.preventDefault();
+
+        const table = document.getElementById('ring-table');
+        table.innerHTML = '<tbody><tr><td class="table-empty">加载中…</td></tr></tbody>';
+
+        const query = new URLSearchParams(new FormData(event.target));
+        const url = new URL('api/ring?' + query.toString(), location.href);
+        const response = await fetch(url, {cache: 'no-cache'});
+
+        if (!response.ok) {
+            table.innerHTML = `<tbody><tr><td class="table-empty">${escapeHTML((await response.text()) || '未知错误')}</td></tr></tbody>`;
             return;
         }
 
-        drawTable(table, await r.json());
+        const data = await response.json();
+        table.innerHTML = '';
+
+        if (data.needs_2fa) {
+            document.getElementById('tfa-field').style.display = 'block';
+            document.getElementById('tfa-prompt').textContent = data.prompt || '请输入发送到设备的两步验证码。';
+            return;
+        }
+
+        drawTable(table, data);
     }
-</script>
 
-<main>
-    <button id="stream">Temporary stream</button>
-    <div>
-        <form id="stream-form">
-            <input type="text" name="name" placeholder="name">
-            <input type="text" name="src" placeholder="url" required size="30">
-            <button type="submit">add</button>
-        </form>
-    </div>
-    <script>
-        document.getElementById('stream').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-        });
+    document.getElementById('ring-credentials-form').addEventListener('submit', handleRingAuth);
+    document.getElementById('ring-token-form').addEventListener('submit', handleRingAuth);
 
-        document.getElementById('stream-form').addEventListener('submit', async ev => {
-            ev.preventDefault();
+    // Tuya
+    bindTool('tuya');
+    document.getElementById('tuya-credentials-form').addEventListener('submit', async event => {
+        event.preventDefault();
 
-            const url = new URL('api/streams', location.href);
-            url.searchParams.set('name', ev.target.elements['name'].value);
-            url.searchParams.set('src', ev.target.elements['src'].value);
+        const table = document.getElementById('tuya-table');
+        table.innerHTML = '<tbody><tr><td class="table-empty">加载中…</td></tr></tbody>';
 
-            const r = await fetch(url, {method: 'PUT'});
-            alert(r.ok ? 'OK' : 'ERROR: ' + await r.text());
-        });
-    </script>
+        const query = new URLSearchParams(new FormData(event.target));
+        const url = new URL('api/tuya?' + query.toString(), location.href);
+        const response = await fetch(url, {cache: 'no-cache'});
 
-
-    <button id="alsa">ALSA (Linux audio)</button>
-    <div>
-        <table id="alsa-table"></table>
-    </div>
-    <script>
-        document.getElementById('alsa').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await getSources('alsa-table', 'api/alsa');
-        });
-    </script>
-
-
-    <button id="homekit">Apple HomeKit</button>
-    <div>
-        <form id="homekit-pair">
-            <input type="text" name="id" placeholder="stream id" required>
-            <input type="text" name="src" placeholder="src" required size="30">
-            <input type="text" name="pin" placeholder="pin" required size="10">
-            <button type="submit">pair</button>
-        </form>
-        <form id="homekit-unpair">
-            <input type="text" name="id" placeholder="stream id" required>
-            <button type="submit">unpair</button>
-        </form>
-        <table id="homekit-table"></table>
-    </div>
-    <script>
-        async function reloadHomeKit() {
-            await getSources('homekit-table', 'api/discovery/homekit');
-
-            const rows = document.querySelectorAll('#homekit-table tr');
-            rows.forEach((row, i) => {
-                let commands = '';
-                if (row.children[2].innerText.indexOf('status=1') > 0) {
-                    commands += '<a href="#">pair</a>';
-                } else if (i > 0 && row.children[3].innerText) {
-                    commands += '<a href="#">unpair</a>';
-                }
-                row.innerHTML += i > 0 ? `<td>${commands}</td>` : '<th>commands</th>';
-            });
+        if (!response.ok) {
+            table.innerHTML = `<tbody><tr><td class="table-empty">${escapeHTML((await response.text()) || '未知错误')}</td></tr></tbody>`;
+            return;
         }
 
-        document.getElementById('homekit').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await reloadHomeKit();
-        });
+        table.innerHTML = '';
+        drawTable(table, await response.json());
+    });
 
-        document.getElementById('homekit-table').addEventListener('click', ev => {
-            if (ev.target.innerText === 'pair') {
-                const form = document.querySelector('#homekit-pair');
-                const row = ev.target.closest('tr');
-                form.children[0].value = row.children[0].innerText;
-                form.children[1].value = row.children[2].innerText;
-            } else if (ev.target.innerText === 'unpair') {
-                const form = document.querySelector('#homekit-unpair');
-                const row = ev.target.closest('tr');
-                form.children[0].value = row.children[3].innerText;
-            }
-        });
+    // Roborock
+    bindTool('roborock', () => getSources('roborock-table', 'api/roborock'));
+    document.getElementById('roborock-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const response = await fetch('api/roborock', {method: 'POST', body: new FormData(event.target)});
+        await getSources('roborock-table', response);
+    });
 
-        document.getElementById('homekit-pair').addEventListener('submit', async ev => {
-            ev.preventDefault();
+    // Wyze
+    async function wyzeReload() {
+        const response = await fetch('api/wyze', {cache: 'no-cache'});
+        const data = await response.json();
+        const users = document.getElementById('wyze-id');
+        users.innerHTML = data.map(item => `<option value="${escapeHTML(item)}">${escapeHTML(item)}</option>`).join('');
+    }
 
-            const params = new URLSearchParams(new FormData(ev.target));
-            const r = await fetch('api/homekit', {method: 'POST', body: params});
-            alert(r.ok ? 'OK' : 'ERROR: ' + await r.text());
+    bindTool('wyze', wyzeReload);
 
-            await reloadHomeKit();
-        });
+    document.getElementById('wyze-login-form').addEventListener('submit', async event => {
+        event.preventDefault();
 
-        document.getElementById('homekit-unpair').addEventListener('submit', async ev => {
-            ev.preventDefault();
+        const table = document.getElementById('wyze-table');
+        table.innerHTML = '<tbody><tr><td class="table-empty">加载中…</td></tr></tbody>';
 
-            const params = new URLSearchParams(new FormData(ev.target));
-            const r = await fetch('api/homekit?' + params.toString(), {method: 'DELETE'});
-            alert(r.ok ? 'OK' : 'ERROR: ' + await r.text());
+        const params = new URLSearchParams(new FormData(event.target));
+        const response = await fetch('api/wyze', {method: 'POST', body: params});
 
-            await reloadHomeKit();
-        });
-    </script>
-
-
-    <button id="dvrip">DVRIP</button>
-    <div>
-        <table id="dvrip-table"></table>
-    </div>
-    <script>
-        document.getElementById('dvrip').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await getSources('dvrip-table', 'api/dvrip');
-        });
-    </script>
-
-
-    <button id="devices">FFmpeg Devices (USB)</button>
-    <div>
-        <table id="devices-table"></table>
-    </div>
-    <script>
-        document.getElementById('devices').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await getSources('devices-table', 'api/ffmpeg/devices');
-        });
-    </script>
-
-
-    <button id="hardware">FFmpeg Hardware</button>
-    <div>
-        <table id="hardware-table"></table>
-    </div>
-    <script>
-        document.getElementById('hardware').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await getSources('hardware-table', 'api/ffmpeg/hardware');
-        });
-    </script>
-
-
-    <button id="nest">Google Nest</button>
-    <div>
-        <form id="nest-form">
-            <input type="text" name="client_id" placeholder="client_id" required>
-            <input type="text" name="client_secret" placeholder="client_secret" required>
-            <input type="text" name="refresh_token" placeholder="refresh_token" required>
-            <input type="text" name="project_id" placeholder="project_id" required>
-            <button type="submit">login</button>
-        </form>
-        <table id="nest-table"></table>
-    </div>
-    <script>
-        document.getElementById('nest').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-        });
-
-        document.getElementById('nest-form').addEventListener('submit', async ev => {
-            ev.preventDefault();
-
-            const query = new URLSearchParams(new FormData(ev.target));
-            const url = new URL('api/nest?' + query.toString(), location.href);
-
-            const r = await fetch(url, {cache: 'no-cache'});
-            await getSources('nest-table', r);
-        });
-    </script>
-
-    <button id="gopro">GoPro</button>
-    <div>
-        <table id="gopro-table"></table>
-    </div>
-    <script>
-        document.getElementById('gopro').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await getSources('gopro-table', 'api/gopro');
-        });
-    </script>
-
-
-    <button id="hass">Home Assistant</button>
-    <div>
-        <table id="hass-table"></table>
-    </div>
-    <script>
-        document.getElementById('hass').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await getSources('hass-table', 'api/hass');
-        });
-    </script>
-
-
-    <button id="onvif">ONVIF</button>
-    <div>
-        <form id="onvif-form">
-            <input type="text" name="src" placeholder="onvif://user:pass@192.168.1.123:80" required size="30">
-            <button type="submit">test</button>
-        </form>
-        <table id="onvif-table"></table>
-    </div>
-    <script>
-        document.getElementById('onvif').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await getSources('onvif-table', 'api/onvif');
-        });
-
-        document.getElementById('onvif-form').addEventListener('submit', async ev => {
-            ev.preventDefault();
-
-            const url = new URL('api/onvif', location.href);
-            url.searchParams.set('src', ev.target.elements['src'].value);
-
-            await getSources('onvif-table', url.toString());
-        });
-    </script>
-
-
-    <button id="ring">Ring</button>
-    <div>
-        <form id="ring-credentials-form">
-            <input type="email" name="email" placeholder="email" required>
-            <input type="password" name="password" placeholder="password" required>
-            <div id="tfa-field" style="display: none">
-                <input type="text" name="code" placeholder="2FA code">
-                <div id="tfa-prompt"></div>
-            </div>
-            <button type="submit">login</button>
-        </form>
-        <form id="ring-token-form">
-            <input type="text" name="refresh_token" placeholder="refresh_token" required>
-            <button type="submit">login</button>
-        </form>
-        <table id="ring-table"></table>
-    </div>
-    <script>
-        document.getElementById('ring').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-        });
-
-        async function handleRingAuth(ev) {
-            ev.preventDefault();
-
-            const table = document.getElementById('ring-table');
-            table.innerText = 'loading...';
-
-            const query = new URLSearchParams(new FormData(ev.target));
-            const url = new URL('api/ring?' + query.toString(), location.href);
-
-            const r = await fetch(url, {cache: 'no-cache'});
-
-            if (!r.ok) {
-                table.innerText = (await r.text()) || 'Unknown error';
-                return;
-            }
-
-            const data = await r.json();
-
-            table.innerText = '';
-
-            if (data.needs_2fa) {
-                document.getElementById('tfa-field').style.display = 'block';
-                document.getElementById('tfa-prompt').textContent = data.prompt || 'Enter 2FA code';
-                return;
-            }
-
-            drawTable(table, data);
+        if (!response.ok) {
+            table.innerHTML = `<tbody><tr><td class="table-empty">${escapeHTML((await response.text()) || '未知错误')}</td></tr></tbody>`;
+            return;
         }
 
-        document.getElementById('ring-credentials-form').addEventListener('submit', handleRingAuth);
-        document.getElementById('ring-token-form').addEventListener('submit', handleRingAuth);
-    </script>
+        table.innerHTML = '';
+        drawTable(table, await response.json());
+        await wyzeReload();
+    });
 
+    document.getElementById('wyze-devices-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const params = new URLSearchParams(new FormData(event.target));
+        await getSources('wyze-table', 'api/wyze?' + params.toString());
+    });
 
-    <button id="tuya">Tuya</button>
-    <div>
-        <form id="tuya-credentials-form">
-            <select name="region" required>
-                <option value="protect-eu.ismartlife.me">EU Central</option>
-                <option value="protect-we.ismartlife.me">EU East</option>
-                <option value="protect-us.ismartlife.me">US West</option>
-                <option value="protect-ue.ismartlife.me">US East</option>
-                <option value="protect.ismartlife.me">China</option>
-                <option value="protect-in.ismartlife.me">India</option>
-            </select>
-            <input type="email" name="email" placeholder="email" required>
-            <input type="password" name="password" placeholder="password" required>
-            <button type="submit">login</button>
-        </form>
-        <table id="tuya-table"></table>
-    </div>
-    <script>
-        document.getElementById('tuya').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-        });
+    // Xiaomi
+    async function xiaomiReload() {
+        document.getElementById('xiaomi-login-form').style.display = 'flex';
+        document.getElementById('xiaomi-captcha-form').style.display = 'none';
+        document.getElementById('xiaomi-verify-form').style.display = 'none';
 
-        document.getElementById('tuya-credentials-form').addEventListener('submit', async ev => {
-            ev.preventDefault();
+        const response = await fetch('api/xiaomi', {cache: 'no-cache'});
+        const data = await response.json();
+        const users = document.getElementById('xiaomi-id');
+        users.innerHTML = data.map(item => `<option value="${escapeHTML(item)}">${escapeHTML(item)}</option>`).join('');
+    }
 
-            const table = document.getElementById('tuya-table');
-            table.innerText = 'loading...';
+    bindTool('xiaomi', xiaomiReload);
 
-            const query = new URLSearchParams(new FormData(ev.target));
-            const url = new URL('api/tuya?' + query.toString(), location.href);
+    async function xiaomiLogin(event) {
+        event.preventDefault();
 
-            const r = await fetch(url, {cache: 'no-cache'});
+        const params = new URLSearchParams(new FormData(event.target));
+        const response = await fetch('api/xiaomi', {method: 'POST', body: params});
 
-            if (!r.ok) {
-                table.innerText = (await r.text()) || 'Unknown error';
-                return;
-            }
+        if (response.status === 401) {
+            const data = await response.json();
+            document.getElementById('xiaomi-login-form').style.display = 'none';
 
-            const data = await r.json();
-
-            table.innerText = '';
-
-            drawTable(table, data);
-        });
-    </script>
-
-
-    <button id="roborock">Roborock</button>
-    <div>
-        <form id="roborock-form">
-            <input type="text" name="username" placeholder="username" required>
-            <input type="password" name="password" placeholder="password" required>
-            <button type="submit">login</button>
-        </form>
-        <table id="roborock-table">
-        </table>
-    </div>
-    <script>
-        document.getElementById('roborock').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await getSources('roborock-table', 'api/roborock');
-        });
-
-        document.getElementById('roborock-form').addEventListener('submit', async ev => {
-            ev.preventDefault();
-            const r = await fetch('api/roborock', {method: 'POST', body: new FormData(ev.target)});
-            await getSources('roborock-table', r);
-        });
-    </script>
-
-
-    <button id="v4l2">V4L2 (Linux video)</button>
-    <div>
-        <table id="v4l2-table"></table>
-    </div>
-    <script>
-        document.getElementById('v4l2').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await getSources('v4l2-table', 'api/v4l2');
-        });
-    </script>
-
-
-    <button id="wyze">Wyze</button>
-    <div>
-        <p style="margin: 5px 0; font-size: 12px; color: #888;">
-            API Key required: <a href="https://support.wyze.com/hc/en-us/articles/16129834216731" target="_blank">Get your API Key</a>
-        </p>
-        <form id="wyze-login-form">
-            <input type="text" name="api_id" placeholder="API ID" required size="20">
-            <input type="text" name="api_key" placeholder="API Key" required size="36">
-            <input type="email" name="email" placeholder="email" required>
-            <input type="password" name="password" placeholder="password" required>
-            <button type="submit">login</button>
-        </form>
-        <form id="wyze-devices-form">
-            <select id="wyze-id" name="id" required></select>
-            <button type="submit">load devices</button>
-        </form>
-        <table id="wyze-table"></table>
-    </div>
-    <script>
-        async function wyzeReload(ev) {
-            if (ev) ev.target.nextElementSibling.style.display = 'grid';
-
-            const r = await fetch('api/wyze', {'cache': 'no-cache'});
-            const data = await r.json();
-            const users = document.getElementById('wyze-id');
-            users.innerHTML = data.map(item => `<option value="${item}">${item}</option>`).join('');
-        }
-
-        document.getElementById('wyze').addEventListener('click', wyzeReload);
-
-        document.getElementById('wyze-login-form').addEventListener('submit', async ev => {
-            ev.preventDefault();
-
-            const table = document.getElementById('wyze-table');
-            table.innerText = 'loading...';
-
-            const params = new URLSearchParams(new FormData(ev.target));
-            const r = await fetch('api/wyze', {method: 'POST', body: params});
-
-            if (!r.ok) {
-                table.innerText = (await r.text()) || 'Unknown error';
-                return;
-            }
-
-            const data = await r.json();
-            table.innerText = '';
-            drawTable(table, data);
-            wyzeReload();
-        });
-
-        document.getElementById('wyze-devices-form').addEventListener('submit', async ev => {
-            ev.preventDefault();
-            const params = new URLSearchParams(new FormData(ev.target));
-            await getSources('wyze-table', 'api/wyze?' + params.toString());
-        });
-    </script>
-
-
-    <button id="xiaomi">Xiaomi</button>
-    <div>
-        <form id="xiaomi-login-form">
-            <input type="text" name="username" placeholder="username" required>
-            <input type="password" name="password" placeholder="password" required>
-            <button type="submit">login</button>
-        </form>
-        <form id="xiaomi-captcha-form">
-            <img id="xiaomi-captcha">
-            <input type="text" name="captcha" placeholder="captcha" required size="10">
-            <button type="submit">send</button>
-        </form>
-        <form id="xiaomi-verify-form">
-            <label id="xiaomi-verify"></label>
-            <input type="text" name="verify" placeholder="verify" required size="10">
-            <button type="submit">send</button>
-        </form>
-        <form id="xiaomi-devices-form">
-            <select id="xiaomi-id" name="id" required></select>
-            <select name="region" required>
-                <option value="cn">China</option>
-                <option value="de">Europe</option>
-                <option value="i2">India</option>
-                <option value="ru">Russia</option>
-                <option value="sg">Singapore</option>
-                <option value="us">United States</option>
-            </select>
-            <button type="submit">load devices</button>
-        </form>
-        <table id="xiaomi-table"></table>
-    </div>
-    <script>
-        async function xiaomiReload(ev) {
-            if (ev) ev.target.nextElementSibling.style.display = 'grid';
-
-            document.getElementById('xiaomi-login-form').style.display = 'flex';
-            document.getElementById('xiaomi-captcha-form').style.display = 'none';
-            document.getElementById('xiaomi-verify-form').style.display = 'none';
-
-            const r = await fetch('api/xiaomi', {'cache': 'no-cache'});
-            const data = await r.json();
-            const users = document.getElementById('xiaomi-id');
-            users.innerHTML = data.map(item => `<option value="${item}">${item}</option>`).join('');
-        }
-
-        document.getElementById('xiaomi').addEventListener('click', xiaomiReload);
-
-        async function xiaomiLogin(ev) {
-            ev.preventDefault();
-            const params = new URLSearchParams(new FormData(ev.target));
-            const r = await fetch('api/xiaomi', {method: 'POST', body: params});
-            if (r.status === 401) {
-                /** @type {{captcha: string, verify_email: string, verify_phone: string}} */
-                const data = await r.json();
-                document.getElementById('xiaomi-login-form').style.display = 'none';
-                if (data.captcha) {
-                    document.getElementById('xiaomi-captcha-form').style.display = 'flex';
-                    document.getElementById('xiaomi-captcha').src = 'data:image/jpeg;base64,' + data.captcha;
-                } else {
-                    document.getElementById('xiaomi-verify-form').style.display = 'flex';
-                    document.getElementById('xiaomi-verify').innerText = data.verify_email || data.verify_phone;
-                }
-            } else if (r.ok) {
-                alert('OK');
-                xiaomiReload();
+            if (data.captcha) {
+                document.getElementById('xiaomi-captcha-form').style.display = 'flex';
+                document.getElementById('xiaomi-captcha').src = 'data:image/jpeg;base64,' + data.captcha;
             } else {
-                alert('ERROR: ' + await r.text());
+                document.getElementById('xiaomi-verify-form').style.display = 'flex';
+                document.getElementById('xiaomi-verify').innerText = data.verify_email || data.verify_phone;
             }
+        } else if (response.ok) {
+            toast('登录成功。', 'success');
+            await xiaomiReload();
+        } else {
+            toast('错误：' + await response.text(), 'error');
         }
+    }
 
-        document.getElementById('xiaomi-login-form').addEventListener('submit', xiaomiLogin);
-        document.getElementById('xiaomi-captcha-form').addEventListener('submit', xiaomiLogin);
-        document.getElementById('xiaomi-verify-form').addEventListener('submit', xiaomiLogin);
+    document.getElementById('xiaomi-login-form').addEventListener('submit', xiaomiLogin);
+    document.getElementById('xiaomi-captcha-form').addEventListener('submit', xiaomiLogin);
+    document.getElementById('xiaomi-verify-form').addEventListener('submit', xiaomiLogin);
 
-        document.getElementById('xiaomi-devices-form').addEventListener('submit', async ev => {
-            ev.preventDefault();
-            const params = new URLSearchParams(new FormData(ev.target));
-            await getSources('xiaomi-table', 'api/xiaomi?' + params.toString());
-        });
-    </script>
-
-
-    <button id="webtorrent">WebTorrent Shares</button>
-    <div>
-        <table id="webtorrent-table"></table>
-    </div>
-    <script>
-        document.getElementById('webtorrent').addEventListener('click', async ev => {
-            ev.target.nextElementSibling.style.display = 'grid';
-            await getSources('webtorrent-table', 'api/webtorrent');
-        });
-    </script>
-</main>
+    document.getElementById('xiaomi-devices-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const params = new URLSearchParams(new FormData(event.target));
+        await getSources('xiaomi-table', 'api/xiaomi?' + params.toString());
+    });
+</script>
 
 </body>
 </html>
